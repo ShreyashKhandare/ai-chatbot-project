@@ -20,16 +20,20 @@ export default function Home() {
   const sessionId = useRef<string>("")
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("user_id")
+    if (typeof window === "undefined") return
+
+    try {
+      const stored = window.localStorage.getItem("user_id")
 
       if (stored) {
         sessionId.current = stored
       } else {
         const newId = crypto.randomUUID()
         sessionId.current = newId
-        localStorage.setItem("user_id", newId)
+        window.localStorage.setItem("user_id", newId)
       }
+    } catch (e) {
+      console.log("localStorage error", e)
     }
   }, [])
   // 🎤 Start Voice
@@ -63,7 +67,7 @@ export default function Home() {
 
     try {
 
-      const res = await fetch("http://127.0.0.1:8000/chat", {
+      const res = await fetch("https://dummy-api.vercel.app/api/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -235,7 +239,7 @@ export default function Home() {
               const formData = new FormData()
               formData.append("file", file)
 
-              await fetch("http://127.0.0.1:8000/upload_pdf", {
+              await fetch("https://dummy-api.vercel.app/api/upload", {
                 method: "POST",
                 body: formData
               })
