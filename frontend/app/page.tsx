@@ -21,9 +21,15 @@ export default function Home() {
   const sessionId = useRef<string>("guest")
 
   useEffect(() => {
-    if (!isBrowser) return
+    if (typeof window === "undefined") return
 
-    const stored = window.localStorage.getItem("user_id")
+    let stored: string | null = null
+
+    try {
+      stored = window.localStorage.getItem("user_id")
+    } catch {
+      stored = null
+    }
 
     if (stored) {
       sessionId.current = stored
@@ -32,8 +38,12 @@ export default function Home() {
         typeof crypto !== "undefined" && crypto.randomUUID
           ? crypto.randomUUID()
           : Math.random().toString(36).substring(2)
+
       sessionId.current = newId
-      window.localStorage.setItem("user_id", newId)
+
+      try {
+        window.localStorage.setItem("user_id", newId)
+      } catch { }
     }
   }, [])
   // 🎤 Start Voice
