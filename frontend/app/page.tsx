@@ -10,6 +10,7 @@ type Message = {
 
 export default function Home() {
 
+  const isBrowser = typeof window !== "undefined"
   const isVoiceInput = useRef(false)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
@@ -17,23 +18,22 @@ export default function Home() {
   const recognitionRef = useRef<any>(null)
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
-  const sessionId = useRef<string>("")
+  const sessionId = useRef<string>("guest")
 
   useEffect(() => {
-    if (typeof window === "undefined") return
+    if (!isBrowser) return
 
-    try {
-      const stored = window.localStorage.getItem("user_id")
+    const stored = window.localStorage.getItem("user_id")
 
-      if (stored) {
-        sessionId.current = stored
-      } else {
-        const newId = crypto.randomUUID()
-        sessionId.current = newId
-        window.localStorage.setItem("user_id", newId)
-      }
-    } catch (e) {
-      console.log("localStorage error", e)
+    if (stored) {
+      sessionId.current = stored
+    } else {
+      const newId =
+        typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : Math.random().toString(36).substring(2)
+      sessionId.current = newId
+      window.localStorage.setItem("user_id", newId)
     }
   }, [])
   // 🎤 Start Voice
