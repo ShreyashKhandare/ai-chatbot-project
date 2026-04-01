@@ -10,6 +10,8 @@ type Message = {
 
 export default function Home() {
 
+  if (typeof window === "undefined") return null
+
   const isBrowser = typeof window !== "undefined"
   const isVoiceInput = useRef(false)
   const [messages, setMessages] = useState<Message[]>([])
@@ -52,13 +54,16 @@ export default function Home() {
     recognitionRef.current?.start()
   }
 
-  // 🔊 Speak AI response
+  // 🔊 Speak AI response (FIXED FOR VERCEL)
   const speak = (text: string) => {
-    const utterance = new SpeechSynthesisUtterance(text)
-    utterance.lang = "en-US"
-    speechSynthesis.speak(utterance)
-  }
+    if (typeof window === "undefined") return
 
+    if (!("speechSynthesis" in window)) return
+
+    const utterance = new window.SpeechSynthesisUtterance(text)
+    utterance.lang = "en-US"
+    window.speechSynthesis.speak(utterance)
+  }
   // 📩 Send Message
   const sendMessage = async (customInput?: string) => {
 
