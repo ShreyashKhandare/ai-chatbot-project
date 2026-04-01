@@ -17,15 +17,21 @@ export default function Home() {
   const recognitionRef = useRef<any>(null)
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
-  const sessionId = useRef(
-    localStorage.getItem("user_id") || crypto.randomUUID()
-  )
+  const sessionId = useRef<string>("")
 
-  // save once
   useEffect(() => {
-    localStorage.setItem("user_id", sessionId.current)
-  }, [])
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("user_id")
 
+      if (stored) {
+        sessionId.current = stored
+      } else {
+        const newId = crypto.randomUUID()
+        sessionId.current = newId
+        localStorage.setItem("user_id", newId)
+      }
+    }
+  }, [])
   // 🎤 Start Voice
   const startListening = () => {
     isVoiceInput.current = true
