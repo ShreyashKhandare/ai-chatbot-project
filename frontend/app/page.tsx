@@ -51,9 +51,9 @@ export default function Home() {
 
     setInput("")
 
-    const newMessages = [...messages, { role: "user", text: userInput }]
+    const newMessages = [...messages, { role: "user" as const, text: userInput }]
 
-    setMessages([...newMessages, { role: "assistant", text: "" }])
+    setMessages([...newMessages, { role: "assistant" as const, text: "" }])
 
     try {
 
