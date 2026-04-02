@@ -1,5 +1,7 @@
 "use client"
 
+export const dynamic = "force-dynamic"
+
 import { Mic } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 
