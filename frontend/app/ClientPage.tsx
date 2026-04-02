@@ -1,6 +1,6 @@
 "use client"
 
-export const dynamic = "force-dynamic"
+
 
 import { Mic } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
@@ -12,9 +12,7 @@ type Message = {
 
 export default function Home() {
 
-    if (typeof window === "undefined") return null
 
-    const isBrowser = typeof window !== "undefined"
     const isVoiceInput = useRef(false)
     const [messages, setMessages] = useState<Message[]>([])
     const [input, setInput] = useState("")
