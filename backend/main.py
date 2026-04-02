@@ -8,12 +8,22 @@ from openai import OpenAI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
-from rag import search_docs, load_pdf, load_vectorstore
+# 🔥 SAFE IMPORT
+try:
+    from rag import search_docs, load_pdf, load_vectorstore
+except Exception as e:
+    print("RAG import error:", e)
 
 load_dotenv()
 
 app = FastAPI()
 
+# ✅ IMPORTANT ROOT ROUTE (for Render)
+@app.get("/")
+def home():
+    return {"status": "Backend running 🚀"}
+
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -22,8 +32,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# 🔥 SAFE API KEY
+api_key = os.getenv("GROQ_API_KEY")
+
+if not api_key:
+    print("⚠️ GROQ_API_KEY missing!")
+
 client = OpenAI(
-    api_key=os.getenv("GROQ_API_KEY"),
+    api_key=api_key,
     base_url="https://api.groq.com/openai/v1"
 )
 
@@ -50,15 +66,9 @@ class ChatRequest(BaseModel):
 
 @app.on_event("startup")
 def startup():
-    load_vectorstore()
+    print("App started")
 
-
-@app.get("/")
-def home():
-    return {"status": "running"}
-
-
-# 🔥 Upload PDF from UI
+# 🔥 Upload PDF
 @app.post("/upload_pdf")
 async def upload_pdf(file: UploadFile = File(...)):
     path = f"pdfs/{file.filename}"
@@ -66,17 +76,25 @@ async def upload_pdf(file: UploadFile = File(...)):
     with open(path, "wb") as f:
         f.write(await file.read())
 
-    load_pdf(path)
+    try:
+        load_pdf(path)
+    except Exception as e:
+        print("PDF load error:", e)
 
     return {"message": "PDF uploaded and processed"}
-
 
 @app.post("/chat")
 def chat(req: ChatRequest):
 
-    is_voice = req.is_voice
     user_message = req.message
     session_id = req.session_id
+    is_voice = req.is_voice
+
+    # 🔥 LOAD VECTORSTORE HERE (SAFE)
+    try:
+        load_vectorstore()
+    except Exception as e:
+        print("Vectorstore load error:", e)
 
     if is_voice:
         style_instruction = """
@@ -91,16 +109,16 @@ Give a VERY SHORT response.
         chat_sessions[session_id] = []
 
     history = chat_sessions[session_id][-6:]
-
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
 
     try:
-        docs = search_docs(user_message)
-        docs = "\n\n".join([doc.page_content for doc in docs])  # ✅ FIX
-    except:
+        load_vectorstore()  # load only when needed
+        docs_list = search_docs(user_message)
+        docs = "\n\n".join([doc.page_content for doc in docs_list])
+    except Exception as e:
+        print("Vector error:", e)
         docs = ""
 
-    # 🔥 Load memory safely
     try:
         memory = load_memory()
         user_memory = memory.get(session_id, "")
@@ -108,34 +126,20 @@ Give a VERY SHORT response.
         user_memory = ""
 
     system_prompt = f"""
-    You are BITTU AI — a smart, friendly, human-like assistant.
+You are BITTU AI — a smart, friendly assistant.
 
-    Personality:
-    - Talk like a real person, not a robot
-    - Be casual, natural, and slightly witty
-    - Keep responses SHORT and to the point
-    - Avoid long paragraphs
-    - No over-explaining unless asked
+User info:
+{user_memory}
 
-    User info:
-    {user_memory}
+Time: {current_time}
+"""
 
-    Rules:
-    - If you know user's name, use it naturally sometimes
-    - If answer is simple → keep it 1-2 lines
-    - If voice input → max 3-5 short lines
-    - Don't sound like a textbook or AI
-    - be more human assistant
-
-    Current time: {current_time}
-    """
     messages = [
         {"role": "system", "content": system_prompt},
         *history,
-        {"role": "user", "content": f"{user_message}\n\nContext:\n{docs}\n\nAnswer briefly and naturally."}
+        {"role": "user", "content": f"{user_message}\n\nContext:\n{docs}"}
     ]
 
-    # 🔥 THIS MUST BE INSIDE FUNCTION
     completion = client.chat.completions.create(
         model="llama-3.1-8b-instant",
         messages=messages,
@@ -151,7 +155,6 @@ Give a VERY SHORT response.
                 ai_message += token
                 yield token
 
-        # ✅ Save session memory
         chat_sessions[session_id].append({
             "role": "user",
             "content": user_message
@@ -162,24 +165,14 @@ Give a VERY SHORT response.
             "content": ai_message
         })
 
-        # 🔥 SMART MEMORY (ONLY NAME)
-
-        important_info = ""
-
-        msg = user_message.lower()
-
-        if "my name is" in msg:
-            name = user_message.lower().split("my name is")[-1].strip()
-            important_info = f"User name: {name}"
-
-        # Save ONLY important info
-        if important_info:
+        # 🔥 Save name only
+        if "my name is" in user_message.lower():
+            name = user_message.split("my name is")[-1].strip()
             try:
                 memory = load_memory()
-                memory[session_id] = important_info   # overwrite name
+                memory[session_id] = f"User name: {name}"
                 save_memory(memory)
             except Exception as e:
                 print("Memory error:", e)
-        
-       
+
     return StreamingResponse(generate(), media_type="text/plain")
