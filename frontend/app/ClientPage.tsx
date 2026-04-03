@@ -10,7 +10,7 @@ type Message = {
     text: string
 }
 
-export default function Home() {
+export default async function Home() {
 
 
     const isVoiceInput = useRef(false)
@@ -66,9 +66,7 @@ export default function Home() {
     }
     // 📩 Send Message
     const sendMessage = async (customInput?: string) => {
-
         const userInput = customInput || input
-
         if (!userInput.trim()) return
 
         const voiceMode = isVoiceInput.current
@@ -77,49 +75,29 @@ export default function Home() {
         setInput("")
 
         const newMessages = [...messages, { role: "user" as const, text: userInput }]
-
         setMessages([...newMessages, { role: "assistant" as const, text: "" }])
 
         try {
-
-            const res = await fetch("https://dummy-api.vercel.app/api/chat", {
+            const res = await fetch("https://ownerofski-ai-chatbot.hf.space/upload", {
                 method: "POST",
                 headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    message: userInput,
-                    session_id: sessionId.current,
-                    is_voice: voiceMode
-                })
-            })
-
-            const reader = res.body?.getReader()
-            if (!reader) return
-
-            const decoder = new TextDecoder()
-            let aiMessage = ""
-
-            while (true) {
-
-                const { done, value } = await reader.read()
-
-                if (done) {
-                    speak(aiMessage)
-                    break
-                }
-
-                aiMessage += decoder.decode(value)
-
-                setMessages((prev) => {
-                    const updated = [...prev]
-                    updated[updated.length - 1] = {
-                        role: "assistant",
-                        text: aiMessage
-                    }
-                    return updated
-                })
+                    data: [userInput],
+                }),
             }
+            )
+
+            const data = await res.json()
+            const aiMessage = data.data[0]
+
+            setMessages((prev) => [
+                ...prev.slice(0, -1),
+                { role: "assistant", text: aiMessage }
+            ])
+
+            speak(aiMessage)
 
         } catch (error) {
             setMessages((prev) => [
@@ -129,6 +107,16 @@ export default function Home() {
         }
     }
 
+    const data = await res.json()
+
+    const aiMessage = data.data[0]
+
+    setMessages((prev) => [
+        ...prev.slice(0, -1),
+        { role: "assistant", text: aiMessage }
+    ])
+
+    speak(aiMessage)
     // 📜 Auto-scroll
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" })
