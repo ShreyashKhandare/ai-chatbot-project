@@ -65,58 +65,34 @@ export default async function Home() {
         window.speechSynthesis.speak(utterance)
     }
     // 📩 Send Message
-    const sendMessage = async (customInput?: string) => {
-        const userInput = customInput || input
-        if (!userInput.trim()) return
+    const sendMessage = async () => {
+        if (!input) return;
 
-        const voiceMode = isVoiceInput.current
-        isVoiceInput.current = false
+        const userMessage = input;
 
-        setInput("")
-
-        const newMessages = [...messages, { role: "user" as const, text: userInput }]
-        setMessages([...newMessages, { role: "assistant" as const, text: "" }])
+        setMessages((prev) => [...prev, { role: "user", text: userMessage }]);
+        setInput("");
 
         try {
-            const res = await fetch("https://ownerofski-ai-chatbot.hf.space/upload", {
+            const res = await fetch("https://ownerofski-ai-chatbot.hf.space/", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({
-                    data: [userInput],
-                }),
-            }
-            )
+                body: JSON.stringify({ message: userMessage }),
+            });
 
-            const data = await res.json()
-            const aiMessage = data.data[0]
+            const data = await res.json();
 
-            setMessages((prev) => [
-                ...prev.slice(0, -1),
-                { role: "assistant", text: aiMessage }
-            ])
-
-            speak(aiMessage)
-
-        } catch (error) {
             setMessages((prev) => [
                 ...prev,
-                { role: "assistant", text: "⚠️ Server error." }
-            ])
+                { role: "assistant", text: data.data[0] },
+            ]);
+        } catch (error) {
+            console.error(error);
         }
-    }
+    };
 
-    const data = await res.json()
-
-    const aiMessage = data.data[0]
-
-    setMessages((prev) => [
-        ...prev.slice(0, -1),
-        { role: "assistant", text: aiMessage }
-    ])
-
-    speak(aiMessage)
     // 📜 Auto-scroll
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" })
