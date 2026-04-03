@@ -9,12 +9,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
 # 🔥 SAFE IMPORT
-try:
-    from rag import search_docs, load_pdf, load_vectorstore
-except:
-    def search_docs(x): return []
-    def load_pdf(x): pass
-    def load_vectorstore(): pass
+def search_docs(x): return []
+def load_pdf(x): pass
+def load_vectorstore(): pass
 
 load_dotenv()
 
@@ -68,10 +65,7 @@ class ChatRequest(BaseModel):
 
 @app.on_event("startup")
 def startup():
-    try:
-        load_vectorstore()
-    except Exception as e:
-        print("Vectorstore failed:", e)
+    print("App started successfully")
 
 # 🔥 Upload PDF
 @app.post("/upload_pdf")
