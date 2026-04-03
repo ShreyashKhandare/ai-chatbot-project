@@ -1,6 +1,7 @@
 import os
 import json
 from datetime import datetime
+from pyexpat.errors import messages
 from fastapi import FastAPI, UploadFile, File
 from pydantic import BaseModel
 from dotenv import load_dotenv
@@ -34,13 +35,15 @@ app.add_middleware(
 # 🔥 SAFE API KEY
 api_key = os.getenv("GROQ_API_KEY")
 
-if not api_key:
-    print("⚠️ GROQ_API_KEY missing!")
+client = None
 
-client = OpenAI(
-    api_key=api_key,
-    base_url="https://api.groq.com/openai/v1"
-)
+if api_key:
+    client = OpenAI(
+        api_key=api_key,
+        base_url="https://api.groq.com/openai/v1"
+    )
+else:
+    print("⚠️ GROQ_API_KEY missing! Running without AI.")
 
 # 🔥 Session-based memory
 chat_sessions = {}
@@ -90,10 +93,7 @@ def chat(req: ChatRequest):
     is_voice = req.is_voice
 
     # 🔥 LOAD VECTORSTORE HERE (SAFE)
-    try:
-        load_vectorstore()
-    except Exception as e:
-        print("Vectorstore load error:", e)
+    
 
     if is_voice:
         style_instruction = """
@@ -139,12 +139,14 @@ Time: {current_time}
         {"role": "user", "content": f"{user_message}\n\nContext:\n{docs}"}
     ]
 
+    if not client:
+        return {"error": "API key missing on server"}
+
     completion = client.chat.completions.create(
         model="llama-3.1-8b-instant",
         messages=messages,
         stream=True
     )
-
     def generate():
         ai_message = ""
 
