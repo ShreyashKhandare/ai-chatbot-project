@@ -30,17 +30,19 @@ export default function ClientPage() {
 
     // 📩 Send Message (FINAL FIXED)
     const sendMessage = async (message?: string) => {
-        const userMessage = message || input;
+        const userMessage = message ?? input; // 👈 IMPORTANT CHANGE
 
         if (!userMessage.trim()) return;
 
+        // 👇 store BEFORE clearing input
+        const finalMessage = userMessage;
+
         setMessages((prev) => [
             ...prev,
-            { role: "user", text: userMessage },
+            { role: "user", text: finalMessage },
         ]);
 
-        setInput("");
-        setLoading(true);
+        setInput(""); // clear AFTER storing
 
         try {
             const res = await fetch(
@@ -51,7 +53,7 @@ export default function ClientPage() {
                         "Content-Type": "application/json",
                     },
                     body: JSON.stringify({
-                        data: [userMessage, []],
+                        data: [finalMessage, []],
                     }),
                 }
             );
@@ -59,24 +61,16 @@ export default function ClientPage() {
             const data = await res.json();
             console.log("API RESPONSE:", data);
 
-            const reply = data?.data?.[1]?.slice(-1)[0]?.[1] || "No response from AI";
+            const reply =
+                data?.data?.[1]?.slice(-1)[0]?.[1] ||
+                "No response from AI";
+
             setMessages((prev) => [
                 ...prev,
                 { role: "assistant", text: reply },
             ]);
-
-            speak(reply);
         } catch (error) {
             console.error(error);
-            setMessages((prev) => [
-                ...prev,
-                {
-                    role: "assistant",
-                    text: "Error connecting to AI",
-                },
-            ]);
-        } finally {
-            setLoading(false);
         }
     };
 
