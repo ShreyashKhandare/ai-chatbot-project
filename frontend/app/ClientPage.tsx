@@ -59,8 +59,7 @@ export default function ClientPage() {
             );
 
             const data = await res.json();
-            console.log("API RESPONSE:", data);
-
+            console.log("FULL API RESPONSE:", data);
             const reply =
                 data?.data?.[1]?.slice(-1)[0]?.[1] ||
                 "No response from AI";
