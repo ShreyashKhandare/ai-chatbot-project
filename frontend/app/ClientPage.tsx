@@ -46,22 +46,22 @@ export default function ClientPage() {
 
         try {
             const res = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/chat`,
+                "https://ownerofski-ai-chatbot.hf.space/run/predict",
                 {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
                     },
                     body: JSON.stringify({
-                        message: finalMessage,
+                        data: [userMessage, []], // ✅ REQUIRED
                     }),
                 }
             );
 
             const data = await res.json();
-            console.log("API RESPONSE:", data);
 
-            const reply = data?.response || "No response from AI";
+            // 👇 VERY IMPORTANT
+            const botReply = data.data[1][0][1];
 
             setMessages((prev) => [
                 ...prev,
@@ -71,6 +71,43 @@ export default function ClientPage() {
             console.error(error);
         }
     };
+
+    let chatHistory = []; // ✅ put this at TOP of your JS file (outside function)
+
+    async function sendMessage() {
+        const userMessage = input.value;
+
+        // show user message in UI (you already have this part)
+        addMessage(userMessage, "user");
+
+        // 👇 ADD THIS
+        chatHistory.push([userMessage, null]);
+
+        const res = await fetch("https://ownerofski-ai-chatbot.hf.space/run/predict_1", {
+
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                data: [userMessage, chatHistory], // ✅ IMPORTANT
+            }),
+        }
+        );
+
+        const data = await res.json();
+
+        // 👇 extract reply
+        const reply = data.data[1].slice(-1)[0][1];
+
+        // 👇 update history
+        chatHistory[chatHistory.length - 1][1] = reply;
+
+        // show bot message in UI
+        addMessage(reply, "bot");
+
+        input.value = "";
+    }
 
     // 📜 Auto Scroll
     useEffect(() => {
