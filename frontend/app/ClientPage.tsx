@@ -44,7 +44,7 @@ export default function ClientPage() {
 
         try {
             const res = await fetch(
-                "https://ownerofski-ai-chatbot.hf.space/run/predict_2",
+                "https://ownerofski-ai-chatbot.hf.space/run/predict",
                 {
                     method: "POST",
                     headers: {
@@ -58,7 +58,8 @@ export default function ClientPage() {
 
             const data = await res.json();
 
-            const botReply = data.data[1][0][1];
+            const botReply =
+                data?.data?.[1]?.[0]?.[1] || "No response from AI";
 
             setMessages((prev) => [
                 ...prev,
@@ -135,28 +136,37 @@ export default function ClientPage() {
             </div>
 
             {/* INPUT */}
-            <div className="p-3">
-                <div className="flex items-center bg-[#1a1a1a] rounded-full px-4 py-2">
+            <div className="flex items-center bg-[#1a1a1a] rounded-full px-4 py-2">
 
-                    <input
-                        className="flex-1 bg-transparent text-white outline-none"
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        placeholder="Send message..."
-                        onKeyDown={(e) => {
-                            if (e.key === "Enter") sendMessage();
-                        }}
-                    />
+                <input
+                    className="flex-1 bg-transparent text-white outline-none"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder="Send message..."
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                            e.preventDefault();
+                            sendMessage();
+                        }
+                    }}
+                />
 
-                    {/* 🎤 MIC */}
-                    <button
-                        onClick={startListening}
-                        className="ml-2 text-gray-400 hover:text-white"
-                    >
-                        <Mic size={20} />
-                    </button>
+                {/* ✅ SEND BUTTON */}
+                <button
+                    onClick={() => sendMessage()}
+                    className="ml-2 text-white bg-pink-500 px-3 py-1 rounded-lg"
+                >
+                    Send
+                </button>
 
-                </div>
+                {/* 🎤 MIC */}
+                <button
+                    onClick={startListening}
+                    className="ml-2 text-gray-400 hover:text-white"
+                >
+                    <Mic size={20} />
+                </button>
+
             </div>
         </div>
     );
