@@ -28,86 +28,50 @@ export default function ClientPage() {
         window.speechSynthesis.speak(utterance);
     };
 
-    // 📩 Send Message (FINAL FIXED)
+    // 📩 SEND MESSAGE (FINAL FIXED)
     const sendMessage = async (message?: string) => {
-        const userMessage = message ?? input; // 👈 IMPORTANT CHANGE
+        const userMessage = message ?? input;
 
         if (!userMessage.trim()) return;
 
-        // 👇 store BEFORE clearing input
-        const finalMessage = userMessage;
-
         setMessages((prev) => [
             ...prev,
-            { role: "user", text: finalMessage },
+            { role: "user", text: userMessage },
         ]);
 
-        setInput(""); // clear AFTER storing
+        setInput("");
+        setLoading(true);
 
         try {
             const res = await fetch(
-                "https://ownerofski-ai-chatbot.hf.space/run/predict",
+                "https://ownerofski-ai-chatbot.hf.space/run/predict_1",
                 {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
                     },
                     body: JSON.stringify({
-                        data: [userMessage, []], // ✅ REQUIRED
+                        data: [userMessage, []],
                     }),
                 }
             );
 
             const data = await res.json();
 
-            // 👇 VERY IMPORTANT
             const botReply = data.data[1][0][1];
 
             setMessages((prev) => [
                 ...prev,
-                { role: "assistant", text: reply },
+                { role: "assistant", text: botReply },
             ]);
+
+            speak(botReply);
         } catch (error) {
             console.error(error);
+        } finally {
+            setLoading(false);
         }
     };
-
-    let chatHistory = []; // ✅ put this at TOP of your JS file (outside function)
-
-    async function sendMessage() {
-        const userMessage = input.value;
-
-        // show user message in UI (you already have this part)
-        addMessage(userMessage, "user");
-
-        // 👇 ADD THIS
-        chatHistory.push([userMessage, null]);
-
-        const res = await fetch("https://ownerofski-ai-chatbot.hf.space/run/predict_1", {
-
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                data: [userMessage, chatHistory], // ✅ IMPORTANT
-            }),
-        }
-        );
-
-        const data = await res.json();
-
-        // 👇 extract reply
-        const reply = data.data[1].slice(-1)[0][1];
-
-        // 👇 update history
-        chatHistory[chatHistory.length - 1][1] = reply;
-
-        // show bot message in UI
-        addMessage(reply, "bot");
-
-        input.value = "";
-    }
 
     // 📜 Auto Scroll
     useEffect(() => {
