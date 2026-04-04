@@ -146,7 +146,6 @@ with gr.Blocks() as demo:
 
     msg.submit(respond, [msg, chatbot], [msg, chatbot])
 
-demo.launch(server_name="0.0.0.0", server_port=7860)
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
