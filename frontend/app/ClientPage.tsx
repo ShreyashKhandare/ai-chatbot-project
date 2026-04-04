@@ -29,6 +29,8 @@ export default function ClientPage() {
     };
 
     // 📩 SEND MESSAGE (FINAL FIXED)
+    import { Client } from "@gradio/client";
+
     const sendMessage = async (message?: string) => {
         const userMessage = message ?? input;
 
@@ -43,32 +45,23 @@ export default function ClientPage() {
         setLoading(true);
 
         try {
-            const res = await fetch(
-                "https://ownerofski-ai-chatbot.hf.space/queue/join",
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        data: [userMessage, []],
-                        fn_index: 1,   // 👈 VERY IMPORTANT
-                    }),
-                }
+            const client = await Client.connect(
+                "ownerofski/ai-chatbot"
             );
 
-            const data = await res.json();
+            const result = await client.predict("/predict", [
+                userMessage,
+                [],
+            ]);
 
-            // safer extraction
             const botReply =
-                data?.output?.data?.[1]?.[0]?.[1] || "No response from AI";
+                result?.data?.[1]?.[0]?.[1] || "No response from AI";
 
             setMessages((prev) => [
                 ...prev,
                 { role: "assistant", text: botReply },
             ]);
 
-            speak(botReply);
         } catch (error) {
             console.error(error);
         } finally {
