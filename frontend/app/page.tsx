@@ -1,9 +1,5 @@
-import dynamic from "next/dynamic"
-
-const ClientOnly = dynamic(() => import("./ClientPage"), {
-  ssr: false,
-})
+import ClientPage from "./ClientPage";
 
 export default function Page() {
-  return <ClientOnly />
+  return <ClientPage />;
 }
