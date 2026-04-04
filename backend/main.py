@@ -4,6 +4,8 @@ from datetime import datetime
 import gradio as gr
 from dotenv import load_dotenv
 from openai import OpenAI
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 # 🔥 SAFE IMPORTS (replace later with real ones)
 def search_docs(x): return []
@@ -144,4 +146,27 @@ with gr.Blocks() as demo:
 
     msg.submit(respond, [msg, chatbot], [msg, chatbot])
 
-demo.launch()
+demo.launch(server_name="0.0.0.0", server_port=7860)
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+import gradio as gr
+
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.post("/chat")
+async def chat_api(request: dict):
+    message = request.get("message", "")
+    response = chat(message)
+    return {"response": response}
+
+# Mount Gradio UI inside FastAPI
+app = gr.mount_gradio_app(app, demo, path="/")

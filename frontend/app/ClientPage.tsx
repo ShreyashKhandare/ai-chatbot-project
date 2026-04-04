@@ -46,23 +46,22 @@ export default function ClientPage() {
 
         try {
             const res = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/run/predict`,
+                `${process.env.NEXT_PUBLIC_API_URL}/chat`,
                 {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
                     },
                     body: JSON.stringify({
-                        data: [finalMessage, []],
+                        message: finalMessage,
                     }),
                 }
             );
 
             const data = await res.json();
-            console.log("FULL API RESPONSE:", data);
-            const reply =
-                data?.data?.[1]?.slice(-1)[0]?.[1] ||
-                "No response from AI";
+            console.log("API RESPONSE:", data);
+
+            const reply = data?.response || "No response from AI";
 
             setMessages((prev) => [
                 ...prev,
