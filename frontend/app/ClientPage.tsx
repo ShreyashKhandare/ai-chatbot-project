@@ -44,7 +44,7 @@ export default function ClientPage() {
 
         try {
             const res = await fetch(
-                "https://ownerofski-ai-chatbot.hf.space/run/predict_1",
+                "https://ownerofski-ai-chatbot.hf.space/run/predict_2",
                 {
                     method: "POST",
                     headers: {
