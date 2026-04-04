@@ -88,7 +88,11 @@ export default function ClientPage() {
 
             const data = await res.json();
 
-            const reply = data?.data?.[0] || "No response from AI";
+            const reply =
+                data?.data?.[0] ||
+                data?.response ||
+                data?.answer ||
+                "No response from AI";
 
             setMessages((prev) => [
                 ...prev,
