@@ -29,7 +29,7 @@ export default function ClientPage() {
     };
 
     // 📩 SEND MESSAGE (FINAL FIXED)
-    import { Client } from "@gradio/client";
+
 
     const sendMessage = async (message?: string) => {
         const userMessage = message ?? input;
@@ -61,6 +61,11 @@ export default function ClientPage() {
             const data = await res.json();
 
             const botReply = data.response || "No response from AI";
+
+            setMessages((prev) => [
+                ...prev,
+                { role: "assistant", text: botReply },
+            ]);
 
         } catch (error) {
             console.error(error);
