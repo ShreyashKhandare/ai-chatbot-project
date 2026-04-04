@@ -45,22 +45,22 @@ export default function ClientPage() {
         setLoading(true);
 
         try {
-            const client = await Client.connect(
-                "ownerofski/ai-chatbot"
+            const res = await fetch(
+                "https://ownerofski-ai-chatbot.hf.space/chat",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        message: userMessage,
+                    }),
+                }
             );
 
-            const result = await client.predict("/predict", [
-                userMessage,
-                [],
-            ]);
+            const data = await res.json();
 
-            const botReply =
-                result?.data?.[1]?.[0]?.[1] || "No response from AI";
-
-            setMessages((prev) => [
-                ...prev,
-                { role: "assistant", text: botReply },
-            ]);
+            const botReply = data.response || "No response from AI";
 
         } catch (error) {
             console.error(error);

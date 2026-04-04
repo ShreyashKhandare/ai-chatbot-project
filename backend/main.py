@@ -147,9 +147,6 @@ with gr.Blocks() as demo:
     msg.submit(respond, [msg, chatbot], [msg, chatbot])
 
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-import gradio as gr
 
 app = FastAPI()
 
