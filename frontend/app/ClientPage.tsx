@@ -44,7 +44,7 @@ export default function ClientPage() {
 
         try {
             const res = await fetch(
-                "https://ownerofski-ai-chatbot.hf.space/run/predict",
+                "https://ownerofski-ai-chatbot.hf.space/queue/join",
                 {
                     method: "POST",
                     headers: {
@@ -52,14 +52,16 @@ export default function ClientPage() {
                     },
                     body: JSON.stringify({
                         data: [userMessage, []],
+                        fn_index: 1,   // 👈 VERY IMPORTANT
                     }),
                 }
             );
 
             const data = await res.json();
 
+            // safer extraction
             const botReply =
-                data?.data?.[1]?.[0]?.[1] || "No response from AI";
+                data?.output?.data?.[1]?.[0]?.[1] || "No response from AI";
 
             setMessages((prev) => [
                 ...prev,
