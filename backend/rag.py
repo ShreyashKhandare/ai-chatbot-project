@@ -1,12 +1,16 @@
 import os
+from dotenv import load_dotenv
+
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_openai import OpenAIEmbeddings
+
+load_dotenv()
 
 VECTOR_DB_PATH = "vectorstore/faiss_index"
 
-embeddings = HuggingFaceEmbeddings()
+embeddings = OpenAIEmbeddings()
 vector_store = None
 
 
@@ -24,8 +28,6 @@ def load_pdf(path):
     chunks = splitter.split_documents(docs)
 
     vector_store = FAISS.from_documents(chunks, embeddings)
-
-    # 🔥 SAVE TO DISK
     vector_store.save_local(VECTOR_DB_PATH)
 
 
@@ -44,9 +46,7 @@ def search_docs(query):
     global vector_store
 
     if vector_store is None:
-        return "No document loaded."
+        return ""
 
     results = vector_store.similarity_search(query, k=3)
-
-    # 🔥 RETURN CLEAN TEXT ONLY
     return "\n\n".join([doc.page_content for doc in results])
