@@ -43,7 +43,7 @@ export default function ClientPage() {
         setLoading(true);
 
         try {
-            const res = await fetch("https://ai-chatbot-backend-h51v.onrender.com/chat/", {
+            const res = await fetch("/api/chat", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
