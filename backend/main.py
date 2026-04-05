@@ -116,26 +116,31 @@ Time: {current_time}
         }
     ]
 
-    try:
-        completion = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
-            messages=messages
-        )
+try:
+    print("API KEY:", os.getenv("GROQ_API_KEY"))
+    completion = client.chat.completions.create(
+        model="llama-3.1-8b-instant",
+        messages=messages
+    )
 
-        reply = completion.choices[0].message.content
+    reply = completion.choices[0].message.content if completion.choices else None
 
-        # 🔥 DEBUG LOGS
-        print("USER:", user_message)
-        print("RESPONSE:", reply)
+    if not reply:
+        print("EMPTY RESPONSE FROM LLM")
+        return "AI did not return a response"
 
-        if not reply:
-            return "No response generated"
+    # 🔥 DEBUG LOGS
+    print("USER:", user_message)
+    print("RESPONSE:", reply)
 
-        return reply
+    if not reply:
+        return "No response generated"
 
-    except Exception as e:
-        print("LLM ERROR:", e)
-        return f"Error: {str(e)}"
+    return reply
+
+except Exception as e:
+    print("LLM ERROR:", e)
+    return f"Error: {str(e)}"
 
 
 # 📡 Chat endpoint
