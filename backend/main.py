@@ -50,11 +50,16 @@ app = FastAPI()
 # 🔥 CORS (IMPORTANT for Vercel)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # later you can restrict
+    allow_origins=["*"],  # allow all for now
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+from fastapi.responses import JSONResponse
+
+@app.options("/chat")
+async def options_chat():
+    return JSONResponse(content={})
 
 
 # 💬 Chat logic
