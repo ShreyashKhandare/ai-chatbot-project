@@ -3,9 +3,8 @@ import json
 from datetime import datetime
 from dotenv import load_dotenv
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from openai import OpenAI
@@ -48,7 +47,7 @@ class ChatRequest(BaseModel):
 # 🚀 FastAPI app
 app = FastAPI()
 
-# 🔥 CORS (IMPORTANT)
+# ✅ CORS middleware (base)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -57,14 +56,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 🔥 HANDLE PREFLIGHT (VERY IMPORTANT)
-@app.post("/chat")
-async def chat_api(request: ChatRequest):
-    # 💬 Chat logic
-    reply = generate_reply(request.message, request.session_id)
-    return JSONResponse(content={"reply": reply})
+# 🔥 FORCE CORS HEADERS (THIS FIXES RENDER ISSUE)
+@app.middleware("http")
+async def force_cors(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    return response
 
 
+# 💬 Chat logic
 def generate_reply(user_message, session_id="default"):
 
     if session_id not in chat_sessions:
@@ -135,6 +137,11 @@ Time: {current_time}
     return reply
 
 
+# 📡 Chat endpoint (ONLY ONE CLEAN ROUTE)
+@app.post("/chat")
+async def chat_api(request: ChatRequest):
+    response = generate_reply(request.message, request.session_id)
+    return {"response": response}
 
 
 # 🏠 Health check
