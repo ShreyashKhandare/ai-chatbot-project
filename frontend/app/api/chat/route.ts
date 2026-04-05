@@ -3,7 +3,7 @@ export async function POST(req: Request) {
         const body = await req.json();
 
         const res = await fetch(
-            "https://ai-chatbot-backend-h51v.onrender.com/chat",
+            "https://ai-chatbot-project-tudo.onrender.com/chat",
             {
                 method: "POST",
                 headers: {
@@ -13,7 +13,9 @@ export async function POST(req: Request) {
             }
         );
 
-        const text = await res.text(); // 👈 safer than json()
+        const text = await res.text(); // 👈 IMPORTANT
+
+        console.log("RAW BACKEND RESPONSE:", text);
 
         let data;
 
@@ -35,7 +37,10 @@ export async function POST(req: Request) {
 
     } catch (error) {
         return new Response(
-            JSON.stringify({ error: "Proxy failed", details: String(error) }),
+            JSON.stringify({
+                error: "Proxy failed",
+                details: String(error),
+            }),
             { status: 500 }
         );
     }
