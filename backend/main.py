@@ -5,16 +5,17 @@ from dotenv import load_dotenv
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from openai import OpenAI
 
-# ✅ Import REAL RAG functions
+# ✅ RAG
 from rag import search_docs, load_vectorstore
 
 load_dotenv()
 
-# 🔐 API setup (Groq)
+# 🔐 Groq client
 client = OpenAI(
     api_key=os.getenv("GROQ_API_KEY"),
     base_url="https://api.groq.com/openai/v1"
@@ -47,17 +48,18 @@ class ChatRequest(BaseModel):
 # 🚀 FastAPI app
 app = FastAPI()
 
-# 🔥 CORS (IMPORTANT for Vercel)
+# 🔥 CORS (IMPORTANT)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # allow all for now
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-from fastapi.responses import JSONResponse
 
+# 🔥 HANDLE PREFLIGHT (VERY IMPORTANT)
 @app.options("/chat")
+@app.options("/chat/")
 async def options_chat():
     return JSONResponse(content={})
 
@@ -133,14 +135,15 @@ Time: {current_time}
     return reply
 
 
-# 📡 API endpoint
+# 📡 CHAT ENDPOINT (FIXED FOR BOTH ROUTES)
 @app.post("/chat")
+@app.post("/chat/")
 async def chat_api(request: ChatRequest):
     response = generate_reply(request.message, request.session_id)
     return {"response": response}
 
 
-# 🏠 Health check (optional but useful)
+# 🏠 Health check
 @app.get("/")
 def home():
     return {"status": "Backend is running 🚀"}
