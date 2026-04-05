@@ -58,13 +58,13 @@ app.add_middleware(
 )
 
 # 🔥 HANDLE PREFLIGHT (VERY IMPORTANT)
-@app.options("/chat")
-@app.options("/chat/")
-async def options_chat():
-    return JSONResponse(content={})
+@app.post("/chat")
+async def chat_api(request: ChatRequest):
+    # 💬 Chat logic
+    reply = generate_reply(request.message, request.session_id)
+    return JSONResponse(content={"reply": reply})
 
 
-# 💬 Chat logic
 def generate_reply(user_message, session_id="default"):
 
     if session_id not in chat_sessions:
@@ -135,12 +135,6 @@ Time: {current_time}
     return reply
 
 
-# 📡 CHAT ENDPOINT (FIXED FOR BOTH ROUTES)
-@app.post("/chat")
-@app.post("/chat/")
-async def chat_api(request: ChatRequest):
-    response = generate_reply(request.message, request.session_id)
-    return {"response": response}
 
 
 # 🏠 Health check
