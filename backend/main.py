@@ -47,7 +47,7 @@ class ChatRequest(BaseModel):
 # 🚀 FastAPI app
 app = FastAPI()
 
-# ✅ CORS middleware (base)
+# ✅ CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -56,10 +56,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 🔥 FORCE CORS HEADERS (THIS FIXES RENDER ISSUE)
+# 🔥 FORCE HEADERS (Render fix)
 @app.middleware("http")
 async def force_cors(request: Request, call_next):
-    response = await call_next(request)
+    try:
+        response = await call_next(request)
+    except Exception as e:
+        # 👇 NEVER return empty response
+        return app.response_class(
+            content=json.dumps({"response": "Server crash", "error": str(e)}),
+            media_type="application/json"
+        )
+
     response.headers["Access-Control-Allow-Origin"] = "*"
     response.headers["Access-Control-Allow-Methods"] = "*"
     response.headers["Access-Control-Allow-Headers"] = "*"
@@ -116,32 +124,37 @@ Time: {current_time}
 
         reply = completion.choices[0].message.content
 
+        # 🔥 DEBUG LOGS
+        print("USER:", user_message)
+        print("RESPONSE:", reply)
+
+        if not reply:
+            return "No response generated"
+
+        return reply
+
     except Exception as e:
+        print("LLM ERROR:", e)
         return f"Error: {str(e)}"
 
-    # 💾 Save history
-    chat_sessions[session_id].append(
-        {"role": "user", "content": user_message}
-    )
-    chat_sessions[session_id].append(
-        {"role": "assistant", "content": reply}
-    )
 
-    # 🧠 Save name
-    if "my name is" in user_message.lower():
-        name = user_message.lower().split("my name is")[-1].strip()
-        memory = load_memory()
-        memory[session_id] = f"User name: {name}"
-        save_memory(memory)
-
-    return reply
-
-
-# 📡 Chat endpoint (ONLY ONE CLEAN ROUTE)
+# 📡 Chat endpoint
 @app.post("/chat")
 async def chat_api(request: ChatRequest):
-    response = generate_reply(request.message, request.session_id)
-    return {"response": response}
+    try:
+        response = generate_reply(request.message, request.session_id)
+
+        if not response:
+            return {"response": "No response from AI"}
+
+        return {"response": response}
+
+    except Exception as e:
+        print("API ERROR:", e)
+        return {
+            "response": "Backend error occurred",
+            "error": str(e)
+        }
 
 
 # 🏠 Health check
