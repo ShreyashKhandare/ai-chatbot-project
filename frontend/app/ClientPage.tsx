@@ -32,6 +32,7 @@ export default function ClientPage() {
 
 
     const sendMessage = async (message?: string) => {
+        console.log("SEND FUNCTION TRIGGERED");
         const userMessage = message ?? input;
 
         if (!userMessage.trim()) return;
@@ -46,7 +47,7 @@ export default function ClientPage() {
 
         try {
             const res = await fetch(
-                "https://ownerofski-ai-chatbot.hf.space/run/respond",
+                "https://ownerofski-ai-chatbot.hf.space/call/predict",
                 {
                     method: "POST",
                     headers: {
@@ -60,6 +61,7 @@ export default function ClientPage() {
 
             const data = await res.json();
 
+            // extract safely
             const botReply =
                 data?.data?.[1]?.slice(-1)[0]?.[1] || "No response from AI";
 
@@ -67,7 +69,6 @@ export default function ClientPage() {
                 ...prev,
                 { role: "assistant", text: botReply },
             ]);
-
         } catch (error) {
             console.error(error);
         } finally {

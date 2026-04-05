@@ -161,4 +161,4 @@ def respond(message, history):
 msg.submit(respond, [msg, chatbot], [msg, chatbot])
 ```
 
-demo.launch()
+demo.queue(api_open=True).launch(server_name="0.0.0.0", server_port=7860)

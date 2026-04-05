@@ -146,7 +146,7 @@ with gr.Blocks() as demo:
 
     msg.submit(respond, [msg, chatbot], [msg, chatbot])
 
-demo.queue().launch(server_name="0.0.0.0", server_port=7860)
+demo.queue(api_open=True).launch(server_name="0.0.0.0", server_port=7860)
 
 app = FastAPI()
 
