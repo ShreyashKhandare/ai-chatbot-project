@@ -46,7 +46,7 @@ export default function ClientPage() {
 
         try {
             const res = await fetch(
-                "https://ownerofski-ai-chatbot.hf.space/run/predict",
+                "https://ownerofski-ai-chatbot.hf.space/run/respond",
                 {
                     method: "POST",
                     headers: {
@@ -61,7 +61,7 @@ export default function ClientPage() {
             const data = await res.json();
 
             const botReply =
-                data?.data?.[1]?.[0]?.[1] || "No response from AI";
+                data?.data?.[1]?.slice(-1)[0]?.[1] || "No response from AI";
 
             setMessages((prev) => [
                 ...prev,
