@@ -48,13 +48,11 @@ export default function ClientPage() {
                 headers: {
                     "Content-Type": "application/json",
                 },
-                mode: "cors",   // 👈 ADD THIS
                 body: JSON.stringify({
                     message: userMessage,
                     session_id: "user1",
                 }),
             });
-
             const data = await res.json();
 
             const botReply = data.response || "No response from AI";
