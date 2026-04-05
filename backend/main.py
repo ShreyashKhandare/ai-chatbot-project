@@ -77,6 +77,8 @@ async def force_cors(request: Request, call_next):
 # 💬 Chat logic
 def generate_reply(user_message, session_id="default"):
 
+    print("API KEY:", os.getenv("GROQ_API_KEY"))
+
     if session_id not in chat_sessions:
         chat_sessions[session_id] = []
 
