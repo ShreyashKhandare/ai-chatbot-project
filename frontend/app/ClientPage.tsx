@@ -43,19 +43,17 @@ export default function ClientPage() {
         setLoading(true);
 
         try {
-            const res = await fetch(
-                "https://ai-chatbot-backend-h51v.onrender.com/chat",
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        message: userMessage,
-                        session_id: "user1",
-                    }),
-                }
-            );
+            const res = await fetch("https://ai-chatbot-backend-h51v.onrender.com/chat/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                mode: "cors",   // 👈 ADD THIS
+                body: JSON.stringify({
+                    message: userMessage,
+                    session_id: "user1",
+                }),
+            });
 
             const data = await res.json();
 
