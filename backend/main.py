@@ -146,7 +146,7 @@ with gr.Blocks() as demo:
 
     msg.submit(respond, [msg, chatbot], [msg, chatbot])
 
-
+demo.queue().launch(server_name="0.0.0.0", server_port=7860)
 
 app = FastAPI()
 
@@ -166,3 +166,7 @@ async def chat_api(request: dict):
 
 # Mount Gradio UI inside FastAPI
 app = gr.mount_gradio_app(app, demo, path="/")
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=7860)
