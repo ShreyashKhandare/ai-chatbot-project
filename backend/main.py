@@ -37,6 +37,15 @@ def save_memory(data):
     with open(MEMORY_FILE, "w") as f:
         json.dump(data, f, indent=2)
 
+def get_relevant_memory(user_message, facts):
+    relevant = []
+
+    for fact in facts:
+        if any(word in fact.lower() for word in user_message.lower().split()):
+            relevant.append(fact)
+
+    return relevant[-3:] if relevant else facts[-3:]
+
 
 # 📦 Request model
 class ChatRequest(BaseModel):
@@ -100,11 +109,17 @@ def generate_reply(user_message, session_id="default", mode="text"):
     memory[session_id]["history"].append(user_message)
 
     # extract facts
+    # 🧠 SMART FACT EXTRACTION (STEP 1)
+
+    important_keywords = [
+         "name", "age", "goal", "dream", "like", "love",
+        "hate", "career", "study", "work"
+    ]
+
     msg = user_message.lower()
 
-    if "my name is" in msg or "i am" in msg or "im" in msg:
-        name = user_message.split()[-1]
-        memory[session_id]["facts"].append(f"User name is {name}")
+    if any(word in msg for word in important_keywords):
+        memory[session_id]["facts"].append(user_message)
 
     if "i like" in msg:
         like = msg.split("i like")[-1].strip()
@@ -127,7 +142,8 @@ def generate_reply(user_message, session_id="default", mode="text"):
     # =========================
     user_data = memory.get(session_id, {"facts": [], "history": []})
 
-    facts = "\n".join(user_data["facts"][-5:])
+    relevant_facts = get_relevant_memory(user_message, user_data["facts"])
+    facts = "\n".join(relevant_facts)
     history_text = "\n".join(user_data["history"][-5:])
 
     style_instruction = (
@@ -137,39 +153,34 @@ def generate_reply(user_message, session_id="default", mode="text"):
     )
 
     system_prompt = f"""
-You are BITTU AI — a smart personal assistant.
+    You are BITTU AI — a smart personal assistant.
 
-{style_instruction}
+    {style_instruction}
 
-IMPORTANT:
-- You REMEMBER previous conversations
-- Use the memory below to answer questions
-- NEVER say "I don't remember" if history exists
+    IMPORTANT:
+    - You REMEMBER the user personally
+    - Use memory naturally (not robotic)
+    - Do NOT repeat memory unless useful
+    - Sound human
 
-User known facts:
-{facts}
+    User facts:
+    {facts}
 
-Recent conversation:
-{history_text}
-
-Current time: {current_time}
-"""
+    Recent conversation:
+    {history_text}
+    """
 
     # =========================
     # ✅ CORRECT MESSAGE FORMAT
     # =========================
+    valid_history = [
+        msg for msg in chat_sessions[session_id][-6:]
+        if "role" in msg and "content" in msg
+    ]
+
     messages = [
         {"role": "system", "content": system_prompt},
-        valid_history = [
-            msg for msg in chat_sessions[session_id][-6:]
-            if "role" in msg and "content" in msg
-        ]
-
-        messages = [
-            { "role": "system", "content": system_prompt},
-            *valid_history,
-            {"role": "user", "content": user_message}
-        ]
+        *valid_history,
         {"role": "user", "content": user_message}
     ]
 
