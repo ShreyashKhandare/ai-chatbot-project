@@ -26,6 +26,8 @@ chat_sessions = {}
 MEMORY_FILE = "memory.json"
 
 
+MEMORY_FILE = "memory.json"
+
 def load_memory():
     try:
         with open(MEMORY_FILE, "r") as f:
@@ -33,11 +35,9 @@ def load_memory():
     except:
         return {}
 
-
 def save_memory(data):
     with open(MEMORY_FILE, "w") as f:
         json.dump(data, f, indent=2)
-
 
 # 📦 Request model
 class ChatRequest(BaseModel):
@@ -87,6 +87,30 @@ def generate_reply(user_message, session_id="default", mode="text"):
     history = chat_sessions[session_id][-6:]
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
 
+    # 🔥 LONG-TERM MEMORY (ADD HERE)
+
+    memory = load_memory()
+
+    if session_id not in memory:
+        memory[session_id] = {
+            "facts": [],
+            "history": []
+        }
+
+    # store user message
+    memory[session_id]["history"].append(user_message)
+
+    # extract facts
+    if "my name is" in user_message.lower():
+        name = user_message.lower().split("my name is")[-1].strip()
+        memory[session_id]["facts"].append(f"User name is {name}")
+
+    if "i like" in user_message.lower():
+        like = user_message.lower().split("i like")[-1].strip()
+        memory[session_id]["facts"].append(f"User likes {like}")
+
+    save_memory(memory)
+
     # 🔍 RAG
     try:
         load_vectorstore()
@@ -98,26 +122,25 @@ def generate_reply(user_message, session_id="default", mode="text"):
     # 🧠 Memory
     try:
         memory = load_memory()
-        user_memory = memory.get(session_id, "")
-    except:
-        user_memory = ""
+        user_data = memory.get(session_id, {"facts": [], "history": []})
 
-    style_instruction = (
-        "Give a very short answer in 1-2 lines."
-        if mode == "voice"
-        else "Give a detailed and helpful answer."
-    )
+        facts = "\n".join(user_data["facts"][-5:])
+        recent_history = "\n".join(user_data["history"][-5:])
 
-    system_prompt = f"""
-    You are BITTU AI — a smart, friendly assistant.
+        system_prompt = f"""
+        You are BITTU AI — a smart personal assistant.
 
-    {style_instruction}
+        User known facts:
+        {facts}
 
-    User info:
-    {user_memory}
+        Recent conversation:
+        {recent_history}
 
-    Time: {current_time}
-    """
+        Instructions:
+        - If voice mode → give short answers (1-2 lines)
+        - If text mode → give detailed answers
+        - Personalize responses using memory
+        """
 
     messages = [
         {"role": "system", "content": system_prompt},
@@ -136,6 +159,20 @@ def generate_reply(user_message, session_id="default", mode="text"):
         )
 
         reply = completion.choices[0].message.content if completion.choices else None
+       
+
+        # 🔥 SAVE AI RESPONSE (STEP 4)
+        memory = load_memory()
+
+        if session_id not in memory:
+            memory[session_id] = {
+                "facts": [],
+                "history": []
+            }
+
+        memory[session_id]["history"].append(reply)
+
+        save_memory(memory)
 
         if not reply:
             print("EMPTY RESPONSE FROM LLM")
