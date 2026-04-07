@@ -101,10 +101,10 @@ def generate_reply(user_message, session_id="default", mode="text"):
     memory[session_id]["history"].append(user_message)
 
     # extract facts
-    if "my name is" in user_message.lower():
-        name = user_message.lower().split("my name is")[-1].strip()
+    if "my name is" in user_message.lower() or "i am" in user_message.lower() or "im" in user_message.lower():
+        name = user_message.lower().split()[-1]
         memory[session_id]["facts"].append(f"User name is {name}")
-
+        
     if "i like" in user_message.lower():
         like = user_message.lower().split("i like")[-1].strip()
         memory[session_id]["facts"].append(f"User likes {like}")
@@ -119,27 +119,34 @@ def generate_reply(user_message, session_id="default", mode="text"):
         print("RAG error:", e)
         docs = ""
 
-    # 🧠 Memory
-    try:
+# 🧠 Memory
         memory = load_memory()
         user_data = memory.get(session_id, {"facts": [], "history": []})
 
         facts = "\n".join(user_data["facts"][-5:])
-        recent_history = "\n".join(user_data["history"][-5:])
+        history = "\n".join(user_data["history"][-5:])
+
+        style_instruction = (
+            "Give a very short answer in 1-2 lines."
+            if mode == "voice"
+            else "Give a detailed and helpful answer."
+        )
 
         system_prompt = f"""
         You are BITTU AI — a smart personal assistant.
+
+        {style_instruction}
+
+        IMPORTANT:
+        - You REMEMBER previous conversations
+        - Use the memory below to answer questions
+        - NEVER say "I don't remember" if history exists
 
         User known facts:
         {facts}
 
         Recent conversation:
-        {recent_history}
-
-        Instructions:
-        - If voice mode → give short answers (1-2 lines)
-        - If text mode → give detailed answers
-        - Personalize responses using memory
+        {history}
         """
 
     messages = [
