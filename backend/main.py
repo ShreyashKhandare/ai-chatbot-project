@@ -78,6 +78,8 @@ async def force_cors(request: Request, call_next):
 # 💬 Chat logic
 def generate_reply(user_message, session_id="default", mode="text"):
 
+    chat_sessions[session_id] = []
+
     if session_id not in chat_sessions:
         chat_sessions[session_id] = []
 
@@ -158,7 +160,16 @@ Current time: {current_time}
     # =========================
     messages = [
         {"role": "system", "content": system_prompt},
-        *chat_sessions[session_id][-6:],  # must be role/content format
+        valid_history = [
+            msg for msg in chat_sessions[session_id][-6:]
+            if "role" in msg and "content" in msg
+        ]
+
+        messages = [
+            { "role": "system", "content": system_prompt},
+            *valid_history,
+            {"role": "user", "content": user_message}
+        ]
         {"role": "user", "content": user_message}
     ]
 
