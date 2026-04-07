@@ -24,12 +24,12 @@ export default function ClientPage() {
     // 🔊 Speak
     const speak = (text: string) => {
         if (!("speechSynthesis" in window)) return;
+        window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
         window.speechSynthesis.speak(utterance);
     };
 
     // 🔥 Typing Effect (NEW)
-    const modeRef = useRef<"text" | "voice">("text");
 
     // 🔥 Typing effect
     const typeMessage = async (text: string) => {
@@ -103,9 +103,11 @@ export default function ClientPage() {
 
             // 🔊 ONLY for voice
             if (modeRef.current === "voice") {
+                console.log("SPEAKING VOICE MODE ✅");
                 speak(botReply);
+            } else {
+                console.log("TEXT MODE — NO SPEAK ❌");
             }
-
         } catch (error) {
             console.error(error);
         } finally {
