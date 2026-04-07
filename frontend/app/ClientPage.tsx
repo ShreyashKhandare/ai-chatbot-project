@@ -15,12 +15,13 @@ export default function ClientPage() {
     const modeRef = useRef<"text" | "voice">("text");
     const bottomRef = useRef<HTMLDivElement | null>(null);
     const recognitionRef = useRef<any>(null);
+    const [isListening, setIsListening] = useState(false);
 
     // 🎤 Voice Start
     const startListening = () => {
+        setIsListening(true);
         recognitionRef.current?.start();
     };
-
     // 🔊 Speak
     const speak = (text: string) => {
         if (!("speechSynthesis" in window)) return;
@@ -117,10 +118,16 @@ export default function ClientPage() {
 
             // 🔥 SPEAK ONLY IF VOICE (GUARANTEED)
             if (isVoice) {
-                console.log("VOICE MODE SPEAKING ✅");
+                window.speechSynthesis.cancel();
 
-                window.speechSynthesis.cancel(); // stop any previous
                 const utterance = new SpeechSynthesisUtterance(botReply);
+
+                utterance.onend = () => {
+                    if (isListening) {
+                        recognitionRef.current?.start(); // 🔥 restart listening
+                    }
+                };
+
                 window.speechSynthesis.speak(utterance);
             } else {
                 console.log("TEXT MODE — NO SPEAK ❌");
@@ -150,6 +157,7 @@ export default function ClientPage() {
 
             recognition.onresult = (event: any) => {
                 const transcript = event.results[0][0].transcript;
+
                 sendMessage(transcript, "voice"); // 🔥 voice mode
             };
 
@@ -219,10 +227,14 @@ export default function ClientPage() {
 
                 {/* MIC */}
                 <button
-                    onClick={startListening}
-                    className="ml-2 text-gray-400 hover:text-white"
+                    onClick={() => {
+                        setIsListening(false);
+                        recognitionRef.current?.stop();
+                        window.speechSynthesis.cancel();
+                    }}
+                    className="ml-2 text-red-400 hover:text-red-600"
                 >
-                    <Mic size={20} />
+                    Stop
                 </button>
 
             </div>
