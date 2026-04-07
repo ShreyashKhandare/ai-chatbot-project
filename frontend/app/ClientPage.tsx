@@ -57,7 +57,7 @@ export default function ClientPage() {
         mode: "text" | "voice" = "text"
     ) => {
 
-        modeRef.current = mode; // 🔥 store mode
+        const isVoice = mode === "voice"; // 🔥 lock mode
 
         const userMessage = message ?? input;
 
@@ -83,14 +83,14 @@ export default function ClientPage() {
                 body: JSON.stringify({
                     message: userMessage,
                     session_id: "user1",
-                    mode: mode, // ✅ correct now
+                    mode: mode,
                 }),
             });
 
             const data = await res.json();
             const botReply = data.response || "No response from AI";
 
-            // empty assistant message
+            // add empty assistant message
             setMessages((prev) => [
                 ...prev,
                 { role: "assistant", text: "" },
@@ -98,16 +98,34 @@ export default function ClientPage() {
 
             await new Promise((res) => setTimeout(res, 50));
 
-            // typing
-            await typeMessage(botReply);
+            // typing animation
+            let current = "";
+            for (let i = 0; i < botReply.length; i++) {
+                current += botReply[i];
 
-            // 🔊 ONLY for voice
-            if (modeRef.current === "voice") {
-                console.log("SPEAKING VOICE MODE ✅");
-                speak(botReply);
+                setMessages((prev) => {
+                    const updated = [...prev];
+                    updated[updated.length - 1] = {
+                        role: "assistant",
+                        text: current,
+                    };
+                    return updated;
+                });
+
+                await new Promise((res) => setTimeout(res, 15));
+            }
+
+            // 🔥 SPEAK ONLY IF VOICE (GUARANTEED)
+            if (isVoice) {
+                console.log("VOICE MODE SPEAKING ✅");
+
+                window.speechSynthesis.cancel(); // stop any previous
+                const utterance = new SpeechSynthesisUtterance(botReply);
+                window.speechSynthesis.speak(utterance);
             } else {
                 console.log("TEXT MODE — NO SPEAK ❌");
             }
+
         } catch (error) {
             console.error(error);
         } finally {
