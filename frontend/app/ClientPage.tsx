@@ -28,12 +28,33 @@ export default function ClientPage() {
         window.speechSynthesis.speak(utterance);
     };
 
-    // 📩 SEND MESSAGE (FINAL FIXED)
+    // 🔥 Typing Effect (NEW)
+    const typeMessage = async (text: string) => {
+        let current = "";
+
+        for (let i = 0; i < text.length; i++) {
+            current += text[i];
+
+            setMessages((prev) => {
+                const updated = [...prev];
+                updated[updated.length - 1] = {
+                    role: "assistant",
+                    text: current,
+                };
+                return updated;
+            });
+
+            await new Promise((res) => setTimeout(res, 15)); // speed
+        }
+    };
+
+    // 📩 SEND MESSAGE (UPGRADED)
     const sendMessage = async (message?: string) => {
         const userMessage = message ?? input;
 
         if (!userMessage.trim()) return;
 
+        // add user message
         setMessages((prev) => [
             ...prev,
             { role: "user", text: userMessage },
@@ -53,14 +74,21 @@ export default function ClientPage() {
                     session_id: "user1",
                 }),
             });
-            const data = await res.json();
 
+            const data = await res.json();
             const botReply = data.response || "No response from AI";
 
+            // add empty assistant message first
             setMessages((prev) => [
                 ...prev,
-                { role: "assistant", text: botReply },
+                { role: "assistant", text: "" },
             ]);
+
+            // 🔥 typing effect
+            await typeMessage(botReply);
+
+            // 🔊 speak after typing
+            speak(botReply);
 
         } catch (error) {
             console.error(error);
@@ -98,20 +126,20 @@ export default function ClientPage() {
         <div className="flex flex-col h-screen max-w-md mx-auto bg-black text-white">
 
             {/* HEADER */}
-            <div className="p-4 text-center text-lg font-semibold bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
-                BITTU AI
+            <div className="p-4 text-center text-lg font-bold bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
+                BITTU AI 🚀
             </div>
 
             {/* CHAT */}
-            <div className="flex-1 overflow-y-auto px-3 py-4 space-y-2">
+            <div className="flex-1 overflow-y-auto px-3 py-4 space-y-3">
+
                 {messages.map((msg, i) => (
                     <div
                         key={i}
-                        className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"
-                            }`}
+                        className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                     >
                         <div
-                            className={`px-4 py-2 rounded-2xl max-w-[75%] text-sm ${msg.role === "user"
+                            className={`px-4 py-2 rounded-2xl max-w-[75%] text-sm whitespace-pre-wrap ${msg.role === "user"
                                 ? "bg-gradient-to-r from-pink-500 to-purple-500"
                                 : "bg-[#1a1a1a]"
                                 }`}
@@ -122,8 +150,8 @@ export default function ClientPage() {
                 ))}
 
                 {loading && (
-                    <div className="text-gray-400 text-sm">
-                        AI is typing...
+                    <div className="text-gray-400 text-sm animate-pulse">
+                        AI is thinking...
                     </div>
                 )}
 
@@ -131,13 +159,13 @@ export default function ClientPage() {
             </div>
 
             {/* INPUT */}
-            <div className="flex items-center bg-[#1a1a1a] rounded-full px-4 py-2">
+            <div className="flex items-center bg-[#1a1a1a] rounded-full px-4 py-2 m-2">
 
                 <input
                     className="flex-1 bg-transparent text-white outline-none"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder="Send message..."
+                    placeholder="Type a message..."
                     onKeyDown={(e) => {
                         if (e.key === "Enter") {
                             e.preventDefault();
@@ -146,15 +174,15 @@ export default function ClientPage() {
                     }}
                 />
 
-                {/* ✅ SEND BUTTON */}
+                {/* SEND */}
                 <button
                     onClick={() => sendMessage()}
-                    className="ml-2 text-white bg-pink-500 px-3 py-1 rounded-lg"
+                    className="ml-2 text-white bg-pink-500 px-3 py-1 rounded-lg hover:scale-105 transition"
                 >
                     Send
                 </button>
 
-                {/* 🎤 MIC */}
+                {/* MIC */}
                 <button
                     onClick={startListening}
                     className="ml-2 text-gray-400 hover:text-white"
@@ -165,4 +193,4 @@ export default function ClientPage() {
             </div>
         </div>
     );
-}    
+}

@@ -68,7 +68,7 @@ async def force_cors(request: Request, call_next):
             media_type="application/json"
         )
 
-    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Origin"] = "https://ai-chatbot-project-r348.vercel.app"
     response.headers["Access-Control-Allow-Methods"] = "*"
     response.headers["Access-Control-Allow-Headers"] = "*"
     return response
