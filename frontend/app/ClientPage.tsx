@@ -12,7 +12,7 @@ export default function ClientPage() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState("");
     const [loading, setLoading] = useState(false);
-
+    const modeRef = useRef<"text" | "voice">("text");
     const bottomRef = useRef<HTMLDivElement | null>(null);
     const recognitionRef = useRef<any>(null);
 
@@ -29,7 +29,11 @@ export default function ClientPage() {
     };
 
     // 🔥 Typing Effect (NEW)
-    const sendMessage = async (message?: string, mode: "text" | "voice" = "text") => {
+    const sendMessage = async (
+        message?: string,
+        mode: "text" | "voice" = "text") => {
+
+        modeRef.current = mode; // 🔥 store mode reliably
         let current = "";
 
         for (let i = 0; i < text.length; i++) {
@@ -54,6 +58,7 @@ export default function ClientPage() {
     // 📩 SEND MESSAGE (UPGRADED)
     const sendMessage = async (message?: string) => {
         const userMessage = message ?? input;
+        console.log("MODE:", mode);
 
         if (!userMessage.trim()) return;
 
@@ -94,10 +99,9 @@ export default function ClientPage() {
             // Now type into LAST message
             await typeMessage(botReply);
             // 🔊 speak after typing
-            if (mode === "voice") {
+            if (modeRef.current === "voice") {
                 speak(botReply);
             }
-
         } catch (error) {
             console.error(error);
         } finally {
@@ -177,14 +181,14 @@ export default function ClientPage() {
                     onKeyDown={(e) => {
                         if (e.key === "Enter") {
                             e.preventDefault();
-                            sendMessage();
+                            sendMessage(undefined, "text");
                         }
                     }}
                 />
 
                 {/* SEND */}
                 <button
-                    onClick={() => sendMessage()}
+                    onClick={() => sendMessage(undefined, "text")}
                     className="ml-2 text-white bg-pink-500 px-3 py-1 rounded-lg hover:scale-105 transition"
                 >
                     Send
