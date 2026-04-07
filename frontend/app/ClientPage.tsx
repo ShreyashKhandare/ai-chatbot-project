@@ -37,14 +37,17 @@ export default function ClientPage() {
 
             setMessages((prev) => {
                 const updated = [...prev];
+
+                // update LAST message only
                 updated[updated.length - 1] = {
                     role: "assistant",
                     text: current,
                 };
+
                 return updated;
             });
 
-            await new Promise((res) => setTimeout(res, 15)); // speed
+            await new Promise((res) => setTimeout(res, 15));
         }
     };
 
@@ -78,15 +81,17 @@ export default function ClientPage() {
             const data = await res.json();
             const botReply = data.response || "No response from AI";
 
-            // add empty assistant message first
-            setMessages((prev) => [
-                ...prev,
-                { role: "assistant", text: "" },
-            ]);
+            // Add empty assistant message first
+            setMessages((prev) => {
+                const updated = [...prev, { role: "assistant", text: "" }];
+                return updated;
+            });
 
-            // 🔥 typing effect
+            // Wait a tiny bit to ensure state updates
+            await new Promise((res) => setTimeout(res, 50));
+
+            // Now type into LAST message
             await typeMessage(botReply);
-
             // 🔊 speak after typing
             speak(botReply);
 
