@@ -1,6 +1,7 @@
 import os
 import json
 from datetime import datetime
+from statistics import mode
 from dotenv import load_dotenv
 
 from fastapi import FastAPI, Request
@@ -42,6 +43,7 @@ def save_memory(data):
 class ChatRequest(BaseModel):
     message: str
     session_id: str = "default"
+    mode: str = "text"  
 
 
 # 🚀 FastAPI app
@@ -75,7 +77,7 @@ async def force_cors(request: Request, call_next):
 
 
 # 💬 Chat logic
-def generate_reply(user_message, session_id="default"):
+def generate_reply(user_message, session_id="default", mode="text"):
 
     print("API KEY:", os.getenv("GROQ_API_KEY"))
 
@@ -100,14 +102,22 @@ def generate_reply(user_message, session_id="default"):
     except:
         user_memory = ""
 
+    style_instruction = (
+        "Give a very short answer in 1-2 lines."
+        if mode == "voice"
+        else "Give a detailed and helpful answer."
+    )
+
     system_prompt = f"""
-You are BITTU AI — a smart, friendly assistant.
+    You are BITTU AI — a smart, friendly assistant.
 
-User info:
-{user_memory}
+    {style_instruction}
 
-Time: {current_time}
-"""
+    User info:
+    {user_memory}
+
+    Time: {current_time}
+    """
 
     messages = [
         {"role": "system", "content": system_prompt},
@@ -149,7 +159,7 @@ Time: {current_time}
 @app.post("/chat")
 async def chat_api(request: ChatRequest):
     try:
-        response = generate_reply(request.message, request.session_id)
+        response = generate_reply(request.message, request.session_id, request.mode)
 
         if not response:
             return {"response": "No response from AI"}

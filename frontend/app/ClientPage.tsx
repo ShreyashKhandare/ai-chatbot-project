@@ -29,7 +29,7 @@ export default function ClientPage() {
     };
 
     // 🔥 Typing Effect (NEW)
-    const typeMessage = async (text: string) => {
+    const sendMessage = async (message?: string, mode: "text" | "voice" = "text") => {
         let current = "";
 
         for (let i = 0; i < text.length; i++) {
@@ -47,7 +47,7 @@ export default function ClientPage() {
                 return updated;
             });
 
-            await new Promise((res) => setTimeout(res, 15));
+            await new Promise((res) => setTimeout(res, 15)); //speed
         }
     };
 
@@ -75,6 +75,7 @@ export default function ClientPage() {
                 body: JSON.stringify({
                     message: userMessage,
                     session_id: "user1",
+                    mode: mode, // 🔥 NEW
                 }),
             });
 
@@ -93,7 +94,9 @@ export default function ClientPage() {
             // Now type into LAST message
             await typeMessage(botReply);
             // 🔊 speak after typing
-            speak(botReply);
+            if (mode === "voice") {
+                speak(botReply);
+            }
 
         } catch (error) {
             console.error(error);
@@ -120,7 +123,7 @@ export default function ClientPage() {
 
             recognition.onresult = (event: any) => {
                 const transcript = event.results[0][0].transcript;
-                sendMessage(transcript);
+                sendMessage(transcript, "voice"); // 🔥 voice mode
             };
 
             recognitionRef.current = recognition;
