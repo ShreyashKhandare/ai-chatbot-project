@@ -29,11 +29,10 @@ export default function ClientPage() {
     };
 
     // 🔥 Typing Effect (NEW)
-    const sendMessage = async (
-        message?: string,
-        mode: "text" | "voice" = "text") => {
+    const modeRef = useRef<"text" | "voice">("text");
 
-        modeRef.current = mode; // 🔥 store mode reliably
+    // 🔥 Typing effect
+    const typeMessage = async (text: string) => {
         let current = "";
 
         for (let i = 0; i < text.length; i++) {
@@ -41,28 +40,32 @@ export default function ClientPage() {
 
             setMessages((prev) => {
                 const updated = [...prev];
-
-                // update LAST message only
                 updated[updated.length - 1] = {
                     role: "assistant",
                     text: current,
                 };
-
                 return updated;
             });
 
-            await new Promise((res) => setTimeout(res, 15)); //speed
+            await new Promise((res) => setTimeout(res, 15));
         }
     };
 
-    // 📩 SEND MESSAGE (UPGRADED)
-    const sendMessage = async (message?: string) => {
+    // ✅ FINAL CLEAN FUNCTION
+    const sendMessage = async (
+        message?: string,
+        mode: "text" | "voice" = "text"
+    ) => {
+
+        modeRef.current = mode; // 🔥 store mode
+
         const userMessage = message ?? input;
-        console.log("MODE:", mode);
 
         if (!userMessage.trim()) return;
 
-        // add user message
+        console.log("MODE:", mode);
+
+        // user message
         setMessages((prev) => [
             ...prev,
             { role: "user", text: userMessage },
@@ -80,35 +83,35 @@ export default function ClientPage() {
                 body: JSON.stringify({
                     message: userMessage,
                     session_id: "user1",
-                    mode: mode, // 🔥 NEW
+                    mode: mode, // ✅ correct now
                 }),
             });
 
             const data = await res.json();
             const botReply = data.response || "No response from AI";
 
-            // Add empty assistant message first
-            setMessages((prev) => {
-                const updated = [...prev, { role: "assistant", text: "" }];
-                return updated;
-            });
+            // empty assistant message
+            setMessages((prev) => [
+                ...prev,
+                { role: "assistant", text: "" },
+            ]);
 
-            // Wait a tiny bit to ensure state updates
             await new Promise((res) => setTimeout(res, 50));
 
-            // Now type into LAST message
+            // typing
             await typeMessage(botReply);
-            // 🔊 speak after typing
+
+            // 🔊 ONLY for voice
             if (modeRef.current === "voice") {
                 speak(botReply);
             }
+
         } catch (error) {
             console.error(error);
         } finally {
             setLoading(false);
         }
     };
-
     // 📜 Auto Scroll
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
