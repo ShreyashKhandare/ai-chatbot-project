@@ -1,7 +1,7 @@
 "use client";
 
-import { Mic } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+import { Send, Mic, Bot, User } from "lucide-react";
 
 type Message = {
     role: "user" | "assistant";
@@ -12,84 +12,15 @@ export default function ClientPage() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState("");
     const [loading, setLoading] = useState(false);
-    const modeRef = useRef<"text" | "voice">("text");
     const bottomRef = useRef<HTMLDivElement | null>(null);
-    const recognitionRef = useRef<any>(null);
-    const [isListening, setIsListening] = useState(false);
-    const [isSpeaking, setIsSpeaking] = useState(false);
 
-    // 🎤 Voice Start
-    const startListening = () => {
-        // 🔥 STOP AI speaking instantly
-        window.speechSynthesis.cancel();
+    // 🚀 SEND MESSAGE
+    const sendMessage = async () => {
+        if (!input.trim()) return;
 
-        // 🔥 Start listening
-        recognitionRef.current?.start();
-    };
-    // 🔊 Speak
-    if (isVoice) {
-        window.speechSynthesis.cancel();
+        const userMessage = input;
 
-        const utterance = new SpeechSynthesisUtterance(botReply);
-
-        // 🔥 START speaking
-        setIsSpeaking(true);
-
-        utterance.onstart = () => {
-            console.log("AI speaking...");
-        };
-
-        // 🔥 STOP speaking state when done
-        utterance.onend = () => {
-            console.log("AI finished");
-            setIsSpeaking(false);
-        };
-
-        window.speechSynthesis.speak(utterance);
-    }
-
-    // 🔥 Typing Effect (NEW)
-
-    // 🔥 Typing effect
-    const typeMessage = async (text: string) => {
-        let current = "";
-
-        for (let i = 0; i < text.length; i++) {
-            current += text[i];
-
-            setMessages((prev) => {
-                const updated = [...prev];
-                updated[updated.length - 1] = {
-                    role: "assistant",
-                    text: current,
-                };
-                return updated;
-            });
-
-            await new Promise((res) => setTimeout(res, 15));
-        }
-    };
-
-    // ✅ FINAL CLEAN FUNCTION
-    const sendMessage = async (
-        message?: string,
-        mode: "text" | "voice" = "text"
-    ) => {
-
-        const isVoice = mode === "voice"; // 🔥 lock mode
-
-        const userMessage = message ?? input;
-
-        if (!userMessage.trim()) return;
-
-        console.log("MODE:", mode);
-
-        // user message
-        setMessages((prev) => [
-            ...prev,
-            { role: "user", text: userMessage },
-        ]);
-
+        setMessages((prev) => [...prev, { role: "user", text: userMessage }]);
         setInput("");
         setLoading(true);
 
@@ -102,23 +33,16 @@ export default function ClientPage() {
                 body: JSON.stringify({
                     message: userMessage,
                     session_id: "user1",
-                    mode: mode,
                 }),
             });
 
             const data = await res.json();
-            const botReply = data.response || "No response from AI";
+            const botReply = data.response || "No response";
 
-            // add empty assistant message
-            setMessages((prev) => [
-                ...prev,
-                { role: "assistant", text: "" },
-            ]);
-
-            await new Promise((res) => setTimeout(res, 50));
-
-            // typing animation
+            // typing effect
             let current = "";
+            setMessages((prev) => [...prev, { role: "assistant", text: "" }]);
+
             for (let i = 0; i < botReply.length; i++) {
                 current += botReply[i];
 
@@ -131,134 +55,113 @@ export default function ClientPage() {
                     return updated;
                 });
 
-                await new Promise((res) => setTimeout(res, 15));
+                await new Promise((res) => setTimeout(res, 10));
             }
-
-            // 🔥 SPEAK ONLY IF VOICE (GUARANTEED)
-            if (isVoice) {
-                window.speechSynthesis.cancel(); // stop previous
-
-                const utterance = new SpeechSynthesisUtterance(botReply);
-
-                // 🔥 If user interrupts → stop speaking
-                utterance.onstart = () => {
-                    console.log("AI speaking...");
-                };
-
-                utterance.onend = () => {
-                    console.log("AI finished speaking");
-                };
-
-                window.speechSynthesis.speak(utterance);
-            } else {
-                console.log("TEXT MODE — NO SPEAK ❌");
-            }
-
-        } catch (error) {
-            console.error(error);
+        } catch (err) {
+            console.error(err);
         } finally {
             setLoading(false);
         }
     };
-    // 📜 Auto Scroll
+
+    // 📜 AUTO SCROLL
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
 
-    // 🎤 Speech Recognition
-    useEffect(() => {
-        const SpeechRecognition =
-            (window as any).SpeechRecognition ||
-            (window as any).webkitSpeechRecognition;
-
-        if (SpeechRecognition) {
-            const recognition = new SpeechRecognition();
-            recognition.continuous = false;
-            recognition.lang = "en-US";
-
-            recognition.onresult = (event: any) => {
-                const transcript = event.results[0][0].transcript;
-
-                // 🔥 STOP AI immediately when user speaks
-                window.speechSynthesis.cancel();
-
-                sendMessage(transcript, "voice");
-            };
-            recognitionRef.current = recognition;
-        }
-    }, []);
-
     return (
-        <div className="flex flex-col h-screen max-w-md mx-auto bg-black text-white">
+        <div className="flex h-screen bg-[#0f0f0f] text-white">
 
-            {/* HEADER */}
-            <div className="p-4 text-center text-lg font-bold bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
-                FREE AI 🚀
+            {/* 🔥 SIDEBAR */}
+            <div className="w-64 bg-[#111] border-r border-gray-800 p-4 hidden md:flex flex-col">
+                <h1 className="text-xl font-bold mb-6 bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
+                    FREE AI 🚀
+                </h1>
+
+                <button className="bg-gradient-to-r from-pink-500 to-purple-500 p-2 rounded-lg text-sm hover:opacity-80">
+                    + New Chat
+                </button>
+
+                <div className="mt-6 text-gray-400 text-sm">
+                    (Chat history coming soon)
+                </div>
             </div>
 
-            {/* CHAT */}
-            <div className="flex-1 overflow-y-auto px-3 py-4 space-y-3">
+            {/* 💬 MAIN CHAT */}
+            <div className="flex flex-col flex-1">
 
-                {messages.map((msg, i) => (
-                    <div
-                        key={i}
-                        className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-                    >
+                {/* HEADER */}
+                <div className="p-4 border-b border-gray-800 text-center font-semibold">
+                    Your AI Assistant
+                </div>
+
+                {/* MESSAGES */}
+                <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
+
+                    {messages.map((msg, i) => (
                         <div
-                            className={`px-4 py-2 rounded-2xl max-w-[75%] text-sm whitespace-pre-wrap ${msg.role === "user"
-                                ? "bg-gradient-to-r from-pink-500 to-purple-500"
-                                : "bg-[#1a1a1a]"
+                            key={i}
+                            className={`flex items-start gap-3 ${msg.role === "user" ? "justify-end" : ""
                                 }`}
                         >
-                            {msg.text}
+                            {msg.role === "assistant" && (
+                                <div className="bg-purple-600 p-2 rounded-full">
+                                    <Bot size={18} />
+                                </div>
+                            )}
+
+                            <div
+                                className={`px-4 py-3 rounded-2xl max-w-[70%] text-sm leading-relaxed ${msg.role === "user"
+                                    ? "bg-gradient-to-r from-pink-500 to-purple-500 ml-auto"
+                                    : "bg-[#1a1a1a]"
+                                    }`}
+                            >
+                                {msg.text}
+                            </div>
+
+                            {msg.role === "user" && (
+                                <div className="bg-pink-600 p-2 rounded-full">
+                                    <User size={18} />
+                                </div>
+                            )}
                         </div>
+                    ))}
+
+                    {loading && (
+                        <div className="text-gray-400 animate-pulse">
+                            AI is thinking...
+                        </div>
+                    )}
+
+                    <div ref={bottomRef} />
+                </div>
+
+                {/* INPUT BAR */}
+                <div className="p-4 border-t border-gray-800">
+                    <div className="flex items-center bg-[#1a1a1a] rounded-xl px-4 py-3 shadow-lg">
+
+                        <input
+                            className="flex-1 bg-transparent outline-none text-sm"
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            placeholder="Ask anything..."
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter") sendMessage();
+                            }}
+                        />
+
+                        <button
+                            onClick={sendMessage}
+                            className="ml-2 bg-pink-500 p-2 rounded-lg hover:scale-105 transition"
+                        >
+                            <Send size={16} />
+                        </button>
+
+                        <button className="ml-2 bg-purple-600 p-2 rounded-lg hover:scale-105 transition">
+                            <Mic size={16} />
+                        </button>
                     </div>
-                ))}
-
-                {loading && (
-                    <div className="text-gray-400 text-sm animate-pulse">
-                        AI is thinking...
-                    </div>
-                )}
-
-                <div ref={bottomRef} />
-            </div>
-
-            {/* INPUT */}
-            <div className="flex items-center bg-[#1a1a1a] rounded-full px-4 py-2 m-2">
-
-                <input
-                    className="flex-1 bg-transparent text-white outline-none"
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    placeholder="Type a message..."
-                    onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                            e.preventDefault();
-                            sendMessage(undefined, "text");
-                        }
-                    }}
-                />
-
-                {/* SEND */}
-                <button
-                    onClick={() => sendMessage(undefined, "text")}
-                    className="ml-2 text-white bg-pink-500 px-3 py-1 rounded-lg hover:scale-105 transition"
-                >
-                    Send
-                </button>
-
-                {/* MIC */}
-                <button
-                    onClick={() => {
-                        window.speechSynthesis.cancel(); // 🔥 interrupt AI
-                        setIsSpeaking(false);
-                        startListening();
-                    }}
-                >
-                    Stop
-                </button>
-
+                </div>
             </div>
         </div>
     );
