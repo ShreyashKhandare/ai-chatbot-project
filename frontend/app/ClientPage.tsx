@@ -16,19 +16,37 @@ export default function ClientPage() {
     const bottomRef = useRef<HTMLDivElement | null>(null);
     const recognitionRef = useRef<any>(null);
     const [isListening, setIsListening] = useState(false);
+    const [isSpeaking, setIsSpeaking] = useState(false);
 
     // 🎤 Voice Start
     const startListening = () => {
-        setIsListening(true);
+        // 🔥 STOP AI speaking instantly
+        window.speechSynthesis.cancel();
+
+        // 🔥 Start listening
         recognitionRef.current?.start();
     };
     // 🔊 Speak
-    const speak = (text: string) => {
-        if (!("speechSynthesis" in window)) return;
+    if (isVoice) {
         window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(text);
+
+        const utterance = new SpeechSynthesisUtterance(botReply);
+
+        // 🔥 START speaking
+        setIsSpeaking(true);
+
+        utterance.onstart = () => {
+            console.log("AI speaking...");
+        };
+
+        // 🔥 STOP speaking state when done
+        utterance.onend = () => {
+            console.log("AI finished");
+            setIsSpeaking(false);
+        };
+
         window.speechSynthesis.speak(utterance);
-    };
+    }
 
     // 🔥 Typing Effect (NEW)
 
@@ -118,14 +136,17 @@ export default function ClientPage() {
 
             // 🔥 SPEAK ONLY IF VOICE (GUARANTEED)
             if (isVoice) {
-                window.speechSynthesis.cancel();
+                window.speechSynthesis.cancel(); // stop previous
 
                 const utterance = new SpeechSynthesisUtterance(botReply);
 
+                // 🔥 If user interrupts → stop speaking
+                utterance.onstart = () => {
+                    console.log("AI speaking...");
+                };
+
                 utterance.onend = () => {
-                    if (isListening) {
-                        recognitionRef.current?.start(); // 🔥 restart listening
-                    }
+                    console.log("AI finished speaking");
                 };
 
                 window.speechSynthesis.speak(utterance);
@@ -158,9 +179,11 @@ export default function ClientPage() {
             recognition.onresult = (event: any) => {
                 const transcript = event.results[0][0].transcript;
 
-                sendMessage(transcript, "voice"); // 🔥 voice mode
-            };
+                // 🔥 STOP AI immediately when user speaks
+                window.speechSynthesis.cancel();
 
+                sendMessage(transcript, "voice");
+            };
             recognitionRef.current = recognition;
         }
     }, []);
@@ -228,11 +251,10 @@ export default function ClientPage() {
                 {/* MIC */}
                 <button
                     onClick={() => {
-                        setIsListening(false);
-                        recognitionRef.current?.stop();
-                        window.speechSynthesis.cancel();
+                        window.speechSynthesis.cancel(); // 🔥 interrupt AI
+                        setIsSpeaking(false);
+                        startListening();
                     }}
-                    className="ml-2 text-red-400 hover:text-red-600"
                 >
                     Stop
                 </button>
