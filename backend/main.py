@@ -41,7 +41,7 @@ def get_relevant_memory(user_message, facts):
     relevant = []
 
     for fact in facts:
-        if any(word in fact.lower() for word in user_message.lower().split()):
+        if any(word in fact.lower() for word in user_message.lower().split() if len(word) > 2):
             relevant.append(fact)
 
     return relevant[-3:] if relevant else facts[-3:]
@@ -140,12 +140,15 @@ def generate_reply(user_message, session_id="default", mode="text"):
     # =========================
     # 🧠 MEMORY → PROMPT
     # =========================
-    user_data = memory.get(session_id, {"facts": [], "history": []})
+    user_data = memory.get(session_id, {})
 
-    relevant_facts = get_relevant_memory(user_message, user_data["facts"])
+    facts_list = user_data.get("facts", [])
+    history_list = user_data.get("history", [])
+
+    relevant_facts = get_relevant_memory(user_message, facts_list)
     facts = "\n".join(relevant_facts)
-    history_text = "\n".join(user_data["history"][-5:])
 
+    history_text = "\n".join(history_list[-5:])
     style_instruction = (
         "Give a very short answer in 1-2 lines."
         if mode == "voice"
