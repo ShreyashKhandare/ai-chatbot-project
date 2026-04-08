@@ -139,7 +139,7 @@ def generate_reply(user_message, session_id="default", mode="text"):
         )
 
         system_prompt = f"""
-You are BITTU AI.
+You are FREE AI.
 
 {style_instruction}
 
