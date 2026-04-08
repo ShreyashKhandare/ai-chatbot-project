@@ -193,7 +193,7 @@ export default function ClientPage() {
 
             {/* HEADER */}
             <div className="p-4 text-center text-lg font-bold bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
-                BITTU AI 🚀
+                FREE AI 🚀
             </div>
 
             {/* CHAT */}
