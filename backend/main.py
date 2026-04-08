@@ -14,9 +14,11 @@ from rag import search_docs, load_vectorstore
 
 load_dotenv()
 
-# 🔐 Groq client
+# 🔐 Groq client (SAFE INIT)
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
 client = OpenAI(
-    api_key=os.getenv("GROQ_API_KEY"),
+    api_key=GROQ_API_KEY,
     base_url="https://api.groq.com/openai/v1"
 )
 
@@ -29,13 +31,18 @@ def load_memory():
     try:
         with open(MEMORY_FILE, "r") as f:
             return json.load(f)
-    except:
+    except Exception as e:
+        print("Memory load error:", e)
         return {}
 
 
 def save_memory(data):
-    with open(MEMORY_FILE, "w") as f:
-        json.dump(data, f, indent=2)
+    try:
+        with open(MEMORY_FILE, "w") as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        print("Memory save error:", e)
+
 
 def get_relevant_memory(user_message, facts):
     relevant = []
@@ -67,14 +74,18 @@ app.add_middleware(
 )
 
 
-# 🔥 FORCE CORS (Render fix)
+# 🔥 GLOBAL SAFE MIDDLEWARE (IMPORTANT)
 @app.middleware("http")
-async def force_cors(request: Request, call_next):
+async def safe_middleware(request: Request, call_next):
     try:
         response = await call_next(request)
     except Exception as e:
+        print("🔥 GLOBAL ERROR:", e)
         return app.response_class(
-            content=json.dumps({"response": "Server crash", "error": str(e)}),
+            content=json.dumps({
+                "response": "Server crashed",
+                "error": str(e)
+            }),
             media_type="application/json"
         )
 
@@ -87,7 +98,7 @@ async def force_cors(request: Request, call_next):
 # 💬 Chat logic
 def generate_reply(user_message, session_id="default", mode="text"):
     try:
-        print("USER:", user_message)
+        print("\n🧑 USER:", user_message)
 
         if session_id not in chat_sessions:
             chat_sessions[session_id] = []
@@ -95,7 +106,11 @@ def generate_reply(user_message, session_id="default", mode="text"):
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
 
         # ================= MEMORY =================
-        memory = load_memory()
+        try:
+            memory = load_memory()
+        except Exception as e:
+            print("Memory error:", e)
+            memory = {}
 
         if session_id not in memory:
             memory[session_id] = {"facts": [], "history": []}
@@ -118,7 +133,8 @@ def generate_reply(user_message, session_id="default", mode="text"):
         try:
             load_vectorstore()
             docs = search_docs(user_message)
-        except:
+        except Exception as e:
+            print("⚠️ RAG ERROR:", e)
             docs = ""
 
         # ================= SAFE MEMORY =================
@@ -127,7 +143,6 @@ def generate_reply(user_message, session_id="default", mode="text"):
         facts_list = user_data.get("facts", [])
         history_list = user_data.get("history", [])
 
-        # SAFE relevant memory
         relevant_facts = facts_list[-3:]
         facts = "\n".join(relevant_facts)
         history_text = "\n".join(history_list[-5:])
@@ -149,6 +164,9 @@ User facts:
 Recent conversation:
 {history_text}
 
+Docs:
+{docs}
+
 Time: {current_time}
 """
 
@@ -164,20 +182,27 @@ Time: {current_time}
             {"role": "user", "content": user_message}
         ]
 
-        # ================= LLM =================
-        completion = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
-            messages=messages
-        )
+        # ================= LLM (SAFE) =================
+        try:
+            if not GROQ_API_KEY:
+                return "⚠️ API key missing"
 
-        reply = None
-        if completion and completion.choices:
+            completion = client.chat.completions.create(
+                model="llama-3.1-8b-instant",
+                messages=messages,
+                timeout=20
+            )
+
             reply = completion.choices[0].message.content
 
-        if not reply:
-            return "AI did not return a response"
+        except Exception as e:
+            print("🔥 GROQ ERROR:", e)
+            return "⚠️ AI server busy. Try again."
 
-        # SAVE CHAT
+        if not reply:
+            return "No response from AI"
+
+        # ================= SAVE CHAT =================
         chat_sessions[session_id].append({
             "role": "user",
             "content": user_message
@@ -191,13 +216,13 @@ Time: {current_time}
         memory[session_id]["history"].append(reply)
         save_memory(memory)
 
-        print("RESPONSE:", reply)
+        print("🤖 AI:", reply)
 
         return reply
 
     except Exception as e:
         print("🔥 FULL ERROR:", e)
-        return f"Server error: {str(e)}"
+        return "⚠️ Server error occurred"
 
 
 # 📡 API
@@ -210,15 +235,12 @@ async def chat_api(request: ChatRequest):
             request.mode
         )
 
-        if not response:
-            return {"response": "No response from AI"}
-
-        return {"response": response}
+        return {"response": response or "No response"}
 
     except Exception as e:
         print("API ERROR:", e)
         return {
-            "response": "Backend error occurred",
+            "response": "⚠️ Backend error",
             "error": str(e)
         }
 
