@@ -86,121 +86,98 @@ async def force_cors(request: Request, call_next):
 
 # 💬 Chat logic
 def generate_reply(user_message, session_id="default", mode="text"):
-
-    chat_sessions[session_id] = []
-
-    if session_id not in chat_sessions:
-        chat_sessions[session_id] = []
-
-    current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
-
-    # =========================
-    # 🔥 LONG TERM MEMORY
-    # =========================
-    memory = load_memory()
-
-    if session_id not in memory:
-        memory[session_id] = {
-            "facts": [],
-            "history": []
-        }
-
-    # store user msg
-    memory[session_id]["history"].append(user_message)
-
-    # extract facts
-    # 🧠 SMART FACT EXTRACTION (STEP 1)
-
-    important_keywords = [
-         "name", "age", "goal", "dream", "like", "love",
-        "hate", "career", "study", "work"
-    ]
-
-    msg = user_message.lower()
-
-    if any(word in msg for word in important_keywords):
-        memory[session_id]["facts"].append(user_message)
-
-    if "i like" in msg:
-        like = msg.split("i like")[-1].strip()
-        memory[session_id]["facts"].append(f"User likes {like}")
-
-    save_memory(memory)
-
-    # =========================
-    # 🔍 RAG
-    # =========================
     try:
-        load_vectorstore()
-        docs = search_docs(user_message)
-    except Exception as e:
-        print("RAG error:", e)
-        docs = ""
+        print("USER:", user_message)
 
-    # =========================
-    # 🧠 MEMORY → PROMPT
-    # =========================
-    user_data = memory.get(session_id, {})
+        if session_id not in chat_sessions:
+            chat_sessions[session_id] = []
 
-    facts_list = user_data.get("facts", [])
-    history_list = user_data.get("history", [])
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
 
-    relevant_facts = get_relevant_memory(user_message, facts_list)
-    facts = "\n".join(relevant_facts)
+        # ================= MEMORY =================
+        memory = load_memory()
 
-    history_text = "\n".join(history_list[-5:])
-    style_instruction = (
-        "Give a very short answer in 1-2 lines."
-        if mode == "voice"
-        else "Give a detailed and helpful answer."
-    )
+        if session_id not in memory:
+            memory[session_id] = {"facts": [], "history": []}
 
-    system_prompt = f"""
-    You are BITTU AI — a smart personal assistant.
+        memory[session_id]["history"].append(user_message)
 
-    {style_instruction}
+        msg = user_message.lower()
 
-    IMPORTANT:
-    - You REMEMBER the user personally
-    - Use memory naturally (not robotic)
-    - Do NOT repeat memory unless useful
-    - Sound human
+        important_keywords = [
+            "name", "age", "goal", "dream", "like", "love",
+            "hate", "career", "study", "work"
+        ]
 
-    User facts:
-    {facts}
+        if any(word in msg for word in important_keywords):
+            memory[session_id]["facts"].append(user_message)
 
-    Recent conversation:
-    {history_text}
-    """
+        save_memory(memory)
 
-    # =========================
-    # ✅ CORRECT MESSAGE FORMAT
-    # =========================
-    valid_history = [
-        msg for msg in chat_sessions[session_id][-6:]
-        if "role" in msg and "content" in msg
-    ]
+        # ================= RAG =================
+        try:
+            load_vectorstore()
+            docs = search_docs(user_message)
+        except:
+            docs = ""
 
-    messages = [
-        {"role": "system", "content": system_prompt},
-        *valid_history,
-        {"role": "user", "content": user_message}
-    ]
+        # ================= SAFE MEMORY =================
+        user_data = memory.get(session_id, {})
 
-    try:
+        facts_list = user_data.get("facts", [])
+        history_list = user_data.get("history", [])
+
+        # SAFE relevant memory
+        relevant_facts = facts_list[-3:]
+        facts = "\n".join(relevant_facts)
+        history_text = "\n".join(history_list[-5:])
+
+        style_instruction = (
+            "Give a very short answer in 1-2 lines."
+            if mode == "voice"
+            else "Give a detailed and helpful answer."
+        )
+
+        system_prompt = f"""
+You are BITTU AI.
+
+{style_instruction}
+
+User facts:
+{facts}
+
+Recent conversation:
+{history_text}
+
+Time: {current_time}
+"""
+
+        # ================= MESSAGES =================
+        valid_history = [
+            msg for msg in chat_sessions[session_id]
+            if isinstance(msg, dict) and "role" in msg and "content" in msg
+        ]
+
+        messages = [
+            {"role": "system", "content": system_prompt},
+            *valid_history[-6:],
+            {"role": "user", "content": user_message}
+        ]
+
+        # ================= LLM =================
         completion = client.chat.completions.create(
             model="llama-3.1-8b-instant",
             messages=messages
         )
 
-        reply = completion.choices[0].message.content if completion.choices else None
+        reply = None
+        if completion and completion.choices:
+            reply = completion.choices[0].message.content
 
         if not reply:
             return "AI did not return a response"
 
-        # =========================
-        # 💾 SAVE CHAT SESSION
-        # =========================
+        # SAVE CHAT
         chat_sessions[session_id].append({
             "role": "user",
             "content": user_message
@@ -211,21 +188,16 @@ def generate_reply(user_message, session_id="default", mode="text"):
             "content": reply
         })
 
-        # =========================
-        # 💾 SAVE MEMORY (STEP 4)
-        # =========================
-        memory = load_memory()
         memory[session_id]["history"].append(reply)
         save_memory(memory)
 
-        print("USER:", user_message)
         print("RESPONSE:", reply)
 
         return reply
 
     except Exception as e:
-        print("LLM ERROR:", e)
-        return f"Error: {str(e)}"
+        print("🔥 FULL ERROR:", e)
+        return f"Server error: {str(e)}"
 
 
 # 📡 API
