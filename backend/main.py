@@ -25,6 +25,7 @@ client = OpenAI(
 # 🧠 Memory
 chat_sessions = {}
 MEMORY_FILE = "memory.json"
+vectorstore_loaded = False
 
 
 def load_memory():
@@ -130,9 +131,17 @@ def generate_reply(user_message, session_id="default", mode="text"):
         save_memory(memory)
 
         # ================= RAG =================
+        # ================= RAG =================
+        global vectorstore_loaded
+
         try:
-            load_vectorstore()
+            if not vectorstore_loaded:
+                print("Loading vectorstore...")
+                load_vectorstore()
+                vectorstore_loaded = True
+
             docs = search_docs(user_message)
+
         except Exception as e:
             print("⚠️ RAG ERROR:", e)
             docs = ""
