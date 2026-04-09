@@ -25,7 +25,7 @@ export default function ClientPage() {
         setLoading(true);
 
         try {
-            const res = await fetch("/api/chat", {
+            const res = await fetch("https://ai-chatbot-project-tudo.onrender.com/chat", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
